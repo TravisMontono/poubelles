@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ÉcoFutur - Connexion / Inscription</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="form-wrapper">
+            <div class="header">
+                <h1>ÉcoFutur</h1>
+                <div class="tabs">
+                    <button class="tab active" data-tab="login">Connexion</button>
+                    <button class="tab" data-tab="register">Inscription</button>
+                </div>
+            </div>
+            <div class="form-container">
+                <div class="login-form">
+                    <h2>Connexion à votre espace</h2>
+                    <p class="subtitle">Accédez à la gestion intelligente des déchets.</p>
+                    <div class="input-group">
+                        <label for="login-email">Email</label>
+                        <div class="input-field">
+                            <input type="email" id="login-email" placeholder="exemple@email.fr">
+                            <i class="far fa-envelope"></i>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="login-password">Mot de passe</label>
+                        <div class="input-field">
+                            <input type="password" id="login-password" placeholder="Votre mot de passe">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+                    <button class="submit-btn">Se connecter</button>
+                    <div class="actions">
+                        <button class="secondary-btn">Créer un compte</button>
+                        <a href="#" class="link-btn">Retour accueil</a>
+                    </div>
+                    <p class="security-info"><i class="fas fa-check-circle"></i> Votre accès est sécurisé</p>
+                </div>
+
+                <div class="register-form hidden">
+                    <h2>Créer un compte</h2>
+                    <p class="subtitle">Rejoignez notre communauté pour une gestion optimisée.</p>
+                    <div class="input-group">
+                        <label for="register-name">Nom</label>
+                        <div class="input-field">
+                            <input type="text" id="register-name" placeholder="Votre nom">
+                            <i class="far fa-user"></i>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="register-email">Email</label>
+                        <div class="input-field">
+                            <input type="email" id="register-email" placeholder="exemple@email.fr">
+                            <i class="far fa-envelope"></i>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="register-password">Mot de passe</label>
+                        <div class="input-field">
+                            <input type="password" id="register-password" placeholder="Votre mot de passe">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="confirm-password">Confirmer le mot de passe</label>
+                        <div class="input-field">
+                            <input type="password" id="confirm-password" placeholder="Confirmer votre mot de passe">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+                    <button class="submit-btn">S'inscrire</button>
+                    <div class="actions">
+                        <button class="secondary-btn">Déjà un compte ? Se connecter</button>
+                        <a href="#" class="link-btn">Retour accueil</a>
+                    </div>
+                    <p class="security-info"><i class="fas fa-shield-alt"></i> Vos informations sont protégées</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tabs = document.querySelectorAll('.tab');
+        const loginForm = document.querySelector('.login-form');
+        const registerForm = document.querySelector('.register-form');
+        const createAccountBtn = document.querySelector('.login-form .secondary-btn');
+        const loginBtnOnRegister = document.querySelector('.register-form .secondary-btn');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                if (tab.dataset.tab === 'login') {
+                    loginForm.classList.remove('hidden');
+                    registerForm.classList.add('hidden');
+                } else if (tab.dataset.tab === 'register') {
+                    registerForm.classList.remove('hidden');
+                    loginForm.classList.add('hidden');
+                }
+            });
+        });
+
+        createAccountBtn.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tabs[1].classList.add('active');
+            registerForm.classList.remove('hidden');
+            loginForm.classList.add('hidden');
+        });
+
+        loginBtnOnRegister.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tabs[0].classList.add('active');
+            loginForm.classList.remove('hidden');
+            registerForm.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>

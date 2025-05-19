@@ -1,0 +1,334 @@
+<?php
+session_start();
+
+// Check if the user is logged in (you'll need to implement your login logic elsewhere)
+if (!isset($_SESSION['user_id'])) {
+    // Redirect to the login page if not logged in
+    header("Location: login.php");
+    exit();
+}
+
+// Get the logged-in user's ID from the session
+$user_id = $_SESSION['user_id'];
+
+// Database connection (replace with your actual database credentials)
+$servername = "your_servername";
+$username = "your_username";
+$password = "your_password";
+$dbname = "your_dbname";
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Query to fetch the user's smart bins
+$sql = "SELECT * FROM poubelle WHERE utilisateur_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id); // "i" indicates an integer parameter
+$stmt->execute();
+$result = $stmt->get_result();
+
+// At this point, $result contains the smart bins associated with the logged-in user.
+
+?>
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecofutur - Votre Poubelle Intelligente</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-trash-alt"></i> Ecofutur
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="#"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a></li>
+            <li><a href="#"><i class="fas fa-history"></i> Historique</a></li>
+            <li><a href="#"><i class="fas fa-map-marker-alt"></i> Localisation</a></li>
+            <li><a href="#"><i class="fas fa-bell"></i> Alertes</a></li>
+            <li><a href="#"><i class="fas fa-info-circle"></i> À propos</a></li>
+        </ul>
+        <div class="sidebar-bottom">
+            <a href="#"><i class="fas fa-cog"></i> Paramètres</a>
+        </div>
+    </div>
+
+    <div class="content">
+        <h1 class="dashboard-header">
+            <button class="hamburger-btn" id="hamburgerBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+            Votre Poubelle Intelligente
+        </h1>
+
+        <div class="dashboard-widgets">
+            <?php
+            // Loop through each of the user's bins and display their information
+            if ($result->num_rows > 0) {
+                while ($row = $result->fetch_assoc()) {
+                    ?>
+                    <div class="widget">
+                        <h2 class="widget-title">Poubelle #<?php echo htmlspecialchars($row['numero_poubelle']); ?></h2>
+                        <div class="fill-level-info">
+                            <i class="fas fa-trash-alt fill-level-icon" id="fill-icon-<?php echo htmlspecialchars($row['id']); ?>"></i>
+                            <p class="fill-level-percentage"><span id="fill-percentage-<?php echo htmlspecialchars($row['id']); ?>"><?php echo htmlspecialchars($row['niveau_remplissage']); ?></span>%</p>
+                            <p class="fill-level-status">Statut actuel: <strong id="fill-status-<?php echo htmlspecialchars($row['id']); ?>"></strong></p>
+                        </div>
+                    </div>
+                    <div class="widget">
+                        <h2 class="widget-title">Batterie</h2>
+                        <div class="battery-info">
+                            <i class="fas fa-battery-full battery-icon"></i>
+                            <div class="battery-bar-container">
+                                <div class="battery-bar" id="battery-level-<?php echo htmlspecialchars($row['id']); ?>" style="width: <?php echo htmlspecialchars($row['niveau_batterie']); ?>%;"></div>
+                            </div>
+                            <span class="battery-percentage" id="battery-percentage-<?php echo htmlspecialchars($row['id']); ?>"><?php echo htmlspecialchars($row['niveau_batterie']); ?>%</span>
+                        </div>
+                        <p class="battery-status-text">Statut: <strong id="battery-status-text-<?php echo htmlspecialchars($row['id']); ?>"></strong></p>
+                    </div>
+                    <div class="widget">
+                        <h2 class="widget-title">Informations</h2>
+                        <p class="info-item"><strong>Poubelle #:</strong> <span id="bin-id-<?php echo htmlspecialchars($row['id']); ?>"><?php echo htmlspecialchars($row['numero_poubelle']); ?></span></p>
+                        <p class="info-item"><strong>ID:</strong> <span id="device-id-<?php echo htmlspecialchars($row['id']); ?>"><?php echo htmlspecialchars($row['id_device']); ?></span></p>
+                        <p class="info-item"><strong>Dernière vidange:</strong> <span id="last-emptied-<?php echo htmlspecialchars($row['id']); ?>"><?php echo htmlspecialchars($row['derniere_vidange']); ?></span></p>
+                        <p class="info-item"><strong>Date d'installation:</strong> <span id="install-date-<?php echo htmlspecialchars($row['id']); ?>"><?php echo htmlspecialchars($row['date_installation']); ?></span></p>
+                    </div>
+                    <div class="widget">
+                        <h2 class="widget-title"><i class="fas fa-thermometer-half temperature-icon"></i> Conditions internes</h2>
+                        <div class="conditions-internes-info">
+                            <div class="condition-item">
+                                <i class="fas fa-thermometer-half temperature-icon"></i>
+                                <div>Température</div>
+                                <div><strong><span id="internal-temp-<?php echo htmlspecialchars($row['id']); ?>"><?php echo htmlspecialchars($row['temperature']); ?></span>°C</strong></div>
+                            </div>
+                            <div class="condition-item">
+                                <i class="fas fa-tint humidity-icon"></i>
+                                <div>Humidité</div>
+                                <div><strong><span id="internal-humidity-<?php echo htmlspecialchars($row['id']); ?>"><?php echo htmlspecialchars($row['humidite']); ?></span>%</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="widget">
+                        <h2 class="widget-title"><i class="fas fa-bell"></i> Paramètres d'alerte</h2>
+                        <label for="alert-level-<?php echo htmlspecialchars($row['id']); ?>">Seuil d'alerte:</label>
+                        <div class="alert-level-slider-container">
+                            <input type="range" class="form-control-range alert-level-slider" id="alert-level-<?php echo htmlspecialchars($row['id']); ?>" min="0" max="100" value="<?php echo htmlspecialchars($row['seuil_alerte']); ?>">
+                            <span class="alert-level-value"><span id="alert-level-value-<?php echo htmlspecialchars($row['id']); ?>"><?php echo htmlspecialchars($row['seuil_alerte']); ?></span>%</span>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="alert-email-<?php echo htmlspecialchars($row['id']); ?>" <?php if ($row['alert_email'] == 1) echo 'checked'; ?>>
+                            <label class="form-check-label" for="alert-email-<?php echo htmlspecialchars($row['id']); ?>">Alertes par email</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="alert-push-<?php echo htmlspecialchars($row['id']); ?>" <?php if ($row['alert_push'] == 1) echo 'checked'; ?>>
+                            <label class="form-check-label" for="alert-push-<?php echo htmlspecialchars($row['id']); ?>">Notifications push</label>
+                        </div>
+                        <button class="btn btn-enregistrer mt-3" data-bin-id="<?php echo htmlspecialchars($row['id']); ?>">
+                            <i class="fas fa-check"></i> Enregistrer
+                        </button>
+                    </div>
+                    <div class="widget">
+                        <h2 class="widget-title"><i class="fas fa-map-marker-alt"></i> Emplacement</h2>
+                        <div class="emplacement-info">
+                            <i class="fas fa-map-marker-alt fa-3x" style="color: #007bff;"></i>
+                            <div class="emplacement-adresse">
+                                <?php echo htmlspecialchars($row['adresse']); ?>
+                            </div>
+                            <a href="#" class="btn-voir-carte"><i class="fas fa-map"></i> Voir sur la carte</a>
+                        </div>
+                    </div>
+                    <?php
+                }
+            } else {
+                echo "<p>Aucune poubelle intelligente n'est associée à votre compte.</p>";
+            }
+            ?>
+        </div>
+
+        <div class="fill-level-chart-container">
+            <div class="chart-header">
+                <h2 class="chart-title">Évolution du niveau de remplissage</h2>
+                <div class="chart-controls">
+                    <button class="btn btn-sm btn-outline-primary active">Jour</button>
+                    <button class="btn btn-sm btn-outline-primary">Semaine</button>
+                    <button class="btn btn-sm btn-outline-primary">Mois</button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-placeholder">
+                    <p>Graphique de l'activité ici (implémentation JS pour le graphique réel)</p>
+                </div>
+            </div>
+        </div>
+
+        </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const sidebar = document.getElementById('sidebar');
+
+        hamburgerBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+
+        // You'll need to adapt your JavaScript to handle multiple bins
+        <?php
+        if ($result->num_rows > 0) {
+            $result->data_seek(0); // Reset the result pointer
+            while ($row = $result->fetch_assoc()) {
+                ?>
+                const alertLevelSlider_<?php echo htmlspecialchars($row['id']); ?> = document.getElementById('alert-level-<?php echo htmlspecialchars($row['id']); ?>');
+                const alertLevelValue_<?php echo htmlspecialchars($row['id']); ?> = document.getElementById('alert-level-value-<?php echo htmlspecialchars($row['id']); ?>');
+
+                if (alertLevelSlider_<?php echo htmlspecialchars($row['id']); ?> && alertLevelValue_<?php echo htmlspecialchars($row['id']); ?>) {
+                    alertLevelSlider_<?php echo htmlspecialchars($row['id']); ?>.addEventListener('input', () => {
+                        alertLevelValue_<?php echo htmlspecialchars($row['id']); ?>.textContent = alertLevelSlider_<?php echo htmlspecialchars($row['id']); ?>.value;
+                    });
+                }
+                <?php
+            }
+        }
+        ?>
+
+        // --- Simulation de la mise à jour des données (à remplacer par des appels API réels) ---
+        function updateData() {
+            // This function will likely need to be adapted to fetch data for the specific user's bins
+            // and update the corresponding HTML elements.
+            <?php
+            if ($result->num_rows > 0) {
+                $result->data_seek(0); // Reset the result pointer again if needed
+                while ($row = $result->fetch_assoc()) {
+                    ?>
+                    const temp_<?php echo htmlspecialchars($row['id']); ?> = Math.floor(Math.random() * 10 + 20); // Simule température entre 20 et 29
+                    const humidity_<?php echo htmlspecialchars($row['id']); ?> = Math.floor(Math.random() * 20 + 30); // Simule humidité entre 30 et 49
+                    const internalTempSpan_<?php echo htmlspecialchars($row['id']); ?> = document.getElementById('internal-temp-<?php echo htmlspecialchars($row['id']); ?>');
+                    const internalHumiditySpan_<?php echo htmlspecialchars($row['id']); ?> = document.getElementById('internal-humidity-<?php echo htmlspecialchars($row['id']); ?>');
+
+                    if (internalTempSpan_<?php echo htmlspecialchars($row['id']); ?> && internalHumiditySpan_<?php echo htmlspecialchars($row['id']); ?>) {
+                        internalTempSpan_<?php echo htmlspecialchars($row['id']); ?>.textContent = temp_<?php echo htmlspecialchars($row['id']); ?>;
+                        internalHumiditySpan_<?php echo htmlspecialchars($row['id']); ?>.textContent = humidity_<?php echo htmlspecialchars($row['id']); ?>;
+                    }
+                    <?php
+                }
+            }
+            ?>
+        }
+
+        setInterval(updateData, 3000); // Mise à jour toutes les 3 secondes
+
+        function updateBinDisplay(binId, fillLevel, batteryLevel, lastEmptied) {
+            const fillIcon = document.getElementById(`fill-icon-${binId}`);
+            const fillPercentage = document.getElementById(`fill-percentage-${binId}`);
+            const fillStatus = document.getElementById(`fill-status-${binId}`);
+            const batteryBar = document.getElementById(`battery-level-${binId}`);
+            const batteryPercentage = document.getElementById(`battery-percentage-${binId}`);
+            const batteryStatusText = document.getElementById(`battery-status-text-${binId}`);
+            const lastEmptiedSpan = document.getElementById(`last-emptied-${binId}`);
+
+            if (fillPercentage && fillStatus && fillIcon) {
+                fillPercentage.textContent = fillLevel;
+                if (fillLevel < 30) {
+                    fillIcon.className = 'fas fa-trash-alt fill-level-icon fill-level-empty';
+                    fillStatus.textContent = 'Faible';
+                } else if (fillLevel < 70) {
+                    fillIcon.className = 'fas fa-trash-alt fill-level-icon';
+                    fillStatus.textContent = 'Partiellement pleine';
+                } else {
+                    fillIcon.className = 'fas fa-trash-alt fill-level-icon';
+                    fillStatus.textContent = 'Pleine';
+                }
+            }
+
+            if (batteryBar && batteryPercentage && batteryStatusText) {
+                batteryBar.style.width = `${batteryLevel}%`;
+                batteryPercentage.textContent = `${batteryLevel}%`;
+                if (batteryLevel < 20) {
+                    batteryStatusText.textContent = 'Faible';
+                } else if (batteryLevel < 50) {
+                    batteryStatusText.textContent = 'Moyenne';
+                } else {
+                    batteryStatusText.textContent = 'Bonne';
+                }
+            }
+            if (lastEmptiedSpan) {
+                lastEmptiedSpan.textContent = lastEmptied;
+            }
+        }
+
+        // --- Simulation de l'intervalle de mise à jour des données pour chaque poubelle ---
+        setInterval(() => {
+            <?php
+            if ($result->num_rows > 0) {
+                $result->data_seek(0); // Réinitialiser le pointeur de résultat
+                while ($row = $result->fetch_assoc()) {
+                    $bin_id = htmlspecialchars($row['id']);
+                    ?>
+                    const randomFill_<?php echo $bin_id; ?> = Math.floor(Math.random() * 101);
+                    const randomBattery_<?php echo $bin_id; ?> = Math.floor(Math.random() * 101);
+                    const lastEmptyDate_<?php echo $bin_id; ?> = new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                    updateBinDisplay('<?php echo $bin_id; ?>', randomFill_<?php echo $bin_id; ?>, randomBattery_<?php echo $bin_id; ?>, lastEmptyDate_<?php echo $bin_id; ?>);
+                    <?php
+                }
+            }
+            ?>
+        }, 5000);
+
+        // --- Gestion de l'enregistrement des paramètres d'alerte ---
+        const enregistrerButtons = document.querySelectorAll('.btn-enregistrer');
+        enregistrerButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const binId = this.dataset.binId;
+                const alertLevel = document.getElementById(`alert-level-${binId}`).value;
+                const alertEmail = document.getElementById(`alert-email-${binId}`).checked ? 1 : 0;
+                const alertPush = document.getElementById(`alert-push-${binId}`).checked ? 1 : 0;
+
+                // Ici, vous devrez envoyer ces données au serveur (via une requête AJAX par exemple)
+                console.log('Enregistrer pour la poubelle ID:', binId, 'Seuil:', alertLevel, 'Email:', alertEmail, 'Push:', alertPush);
+
+                // Exemple d'appel Fetch pour envoyer les données au serveur (à adapter)
+                fetch('update_bin_settings.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `bin_id=${binId}&alert_level=${alertLevel}&alert_email=${alertEmail}&alert_push=${alertPush}`
+                })
+                .then(response => response.text())
+                .then(data => {
+                    console.log('Réponse du serveur:', data);
+                    // Afficher un message de succès à l'utilisateur
+                    alert('Paramètres enregistrés avec succès pour la poubelle ' + binId);
+                })
+                .catch((error) => {
+                    console.error('Erreur lors de l\'enregistrement:', error);
+                    // Afficher un message d'erreur à l'utilisateur
+                    alert('Erreur lors de l\'enregistrement des paramètres pour la poubelle ' + binId);
+                });
+            });
+        });
+
+        // --- Note concernant la connexion à la poubelle physique ---
+        // Comme mentionné précédemment, la connexion réelle nécessitera un backend
+        // et des appels API pour récupérer les données de votre poubelle intelligente.
+        // Le JavaScript ici simule uniquement la mise à jour des données dans l'interface.
+    </script>
+</body>
+</html>
+
+<?php
+// Fermer la connexion à la base de données
+$stmt->close();
+$conn->close();
+?>
